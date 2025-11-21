@@ -2,7 +2,7 @@ import Foundation
 
 class GeminiStoryGenerator: StoryGenerator {
     private let apiKey: String
-    private let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent")!
+    private let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent")!
     
     init(apiKey: String) {
         self.apiKey = apiKey
