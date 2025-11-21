@@ -64,14 +64,38 @@ class GeminiStoryGenerator: StoryGenerator {
             let imagePrompt: String?
         }
         
-        guard let data = contentString.data(using: .utf8),
-              let storyDTO = try? JSONDecoder().decode(StoryDTO.self, from: data) else {
-             // Fallback if JSON parsing fails
+        // Clean the response - remove markdown code blocks if present
+        var cleanedContent = contentString.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleanedContent.hasPrefix("```json") {
+            cleanedContent = cleanedContent.replacingOccurrences(of: "```json", with: "")
+        }
+        if cleanedContent.hasPrefix("```") {
+            cleanedContent = cleanedContent.replacingOccurrences(of: "```", with: "")
+        }
+        if cleanedContent.hasSuffix("```") {
+            cleanedContent = String(cleanedContent.dropLast(3))
+        }
+        cleanedContent = cleanedContent.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard let data = cleanedContent.data(using: .utf8) else {
+            throw NSError(domain: "GeminiStoryGenerator", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to convert response to data"])
+        }
+        
+        // Try to decode as array first (Gemini sometimes returns an array)
+        var storyDTO: StoryDTO?
+        if let storyArray = try? JSONDecoder().decode([StoryDTO].self, from: data), let firstStory = storyArray.first {
+            storyDTO = firstStory
+        } else if let singleStory = try? JSONDecoder().decode(StoryDTO.self, from: data) {
+            storyDTO = singleStory
+        }
+        
+        guard let story = storyDTO else {
+            print("Failed to parse Gemini response. Content was: \(cleanedContent)")
             throw NSError(domain: "GeminiStoryGenerator", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to parse story from AI response"])
         }
         
         // Manually set the language
-        let newStory = Story(title: storyDTO.title, content: storyDTO.content, imagePrompt: storyDTO.imagePrompt, imageURL: nil, language: params.language == .turkish ? "tr-TR" : "en-US")
+        let newStory = Story(title: story.title, content: story.content, imagePrompt: story.imagePrompt, imageURL: nil, language: params.language == .turkish ? "tr-TR" : "en-US")
         
         return newStory
     }
