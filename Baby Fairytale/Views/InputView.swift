@@ -5,6 +5,23 @@ struct InputView: View {
     @StateObject private var store = StoryStore()
     @State private var params = StoryParams()
     @State private var showLibrary = false
+    @FocusState private var focusedField: Field?
+    @State private var selectedSuggestion: String?
+    
+    private enum Field {
+        case topic
+        case heroName
+        case moral
+        case setting
+    }
+    
+    private let suggestions = [
+        "Uçan bir balon",
+        "Renkli bir gökkuşağı",
+        "Minik bir robot",
+        "Deniz altı şehri",
+        "Sihirli orman"
+    ]
     
     var body: some View {
         NavigationView {
@@ -33,9 +50,34 @@ struct InputView: View {
                         
                         // Input Card
                         VStack(spacing: 20) {
-                            InputField(title: "Masal ne hakkında olsun?", placeholder: "örn. Cesur bir astronot", text: $params.topic, icon: "book.fill")
+                            if let message = viewModel.generatorState.message {
+                                NoticeCard(message: message, systemImage: "info.circle.fill")
+                            }
                             
-                            InputField(title: "Kahramanın Adı", placeholder: "örn. Ali", text: $params.heroName, icon: "person.fill")
+                            InputField(
+                                title: "Masal ne hakkında olsun?",
+                                placeholder: "örn. Cesur bir astronot",
+                                text: $params.topic,
+                                icon: "book.fill"
+                            )
+                            .focused($focusedField, equals: .topic)
+                            
+                            SuggestionRow(
+                                title: "Hızlı Öneriler",
+                                suggestions: suggestions,
+                                selectedSuggestion: $selectedSuggestion
+                            ) { suggestion in
+                                params.topic = suggestion
+                                focusedField = nil
+                            }
+                            
+                            InputField(
+                                title: "Kahramanın Adı",
+                                placeholder: "örn. Ali",
+                                text: $params.heroName,
+                                icon: "person.fill"
+                            )
+                            .focused($focusedField, equals: .heroName)
                             
                             VStack(alignment: .leading, spacing: 8) {
                                 Label("Yaş Grubu", systemImage: "figure.child")
@@ -69,7 +111,53 @@ struct InputView: View {
                                 .cornerRadius(12)
                             }
                             
-                            InputField(title: "Ana Fikir (İsteğe Bağlı)", placeholder: "örn. Her zaman doğruyu söyle", text: $params.moral, icon: "star.fill")
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label("Masal Tonu", systemImage: "sparkles")
+                                    .font(Theme.Fonts.caption(size: 14))
+                                    .foregroundColor(Theme.Colors.text)
+                                
+                                Picker("Masal Tonu", selection: $params.tone) {
+                                    ForEach(StoryTone.allCases) { tone in
+                                        Text(tone.rawValue).tag(tone)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
+                                .padding(5)
+                                .background(Theme.Colors.inputBackground)
+                                .cornerRadius(12)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label("Masal Uzunluğu", systemImage: "text.alignleft")
+                                    .font(Theme.Fonts.caption(size: 14))
+                                    .foregroundColor(Theme.Colors.text)
+                                
+                                Picker("Masal Uzunluğu", selection: $params.length) {
+                                    ForEach(StoryLength.allCases) { length in
+                                        Text(length.rawValue).tag(length)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
+                                .padding(5)
+                                .background(Theme.Colors.inputBackground)
+                                .cornerRadius(12)
+                            }
+                            
+                            InputField(
+                                title: "Ana Fikir (İsteğe Bağlı)",
+                                placeholder: "örn. Her zaman doğruyu söyle",
+                                text: $params.moral,
+                                icon: "star.fill"
+                            )
+                            .focused($focusedField, equals: .moral)
+                            
+                            InputField(
+                                title: "Mekân (İsteğe Bağlı)",
+                                placeholder: "örn. Bulutlar şehri",
+                                text: $params.setting,
+                                icon: "map.fill"
+                            )
+                            .focused($focusedField, equals: .setting)
                         }
                         .padding(25)
                         .background(Theme.Colors.fallbackCard)
@@ -80,6 +168,7 @@ struct InputView: View {
                         // Action Button
                         Button(action: {
                             viewModel.generateStory(params: params)
+                            focusedField = nil
                         }) {
                             if viewModel.isLoading {
                                 ProgressView()
@@ -89,7 +178,7 @@ struct InputView: View {
                             }
                         }
                         .buttonStyle(PrimaryButtonStyle())
-                        .disabled(params.topic.isEmpty || viewModel.isLoading)
+                        .disabled(!params.isValid || viewModel.isLoading || !viewModel.generatorState.canGenerate)
                         .padding(.horizontal, 40)
                         .padding(.bottom, 20)
                     }
@@ -128,6 +217,14 @@ struct InputView: View {
                 LibraryView()
                     .environmentObject(store)
             }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Tamam") {
+                        focusedField = nil
+                    }
+                }
+            }
         }
     }
 }
@@ -149,7 +246,68 @@ struct InputField: View {
                 .background(Theme.Colors.inputBackground)
                 .cornerRadius(12)
                 .font(Theme.Fonts.body())
+                .textInputAutocapitalization(.sentences)
+                .disableAutocorrection(false)
                 .foregroundColor(.black) // Ensure input text is visible
+        }
+    }
+}
+
+struct NoticeCard: View {
+    let message: String
+    let systemImage: String
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: systemImage)
+                .foregroundColor(Theme.Colors.fallbackSecondary)
+                .font(.title3)
+            
+            Text(message)
+                .font(Theme.Fonts.caption(size: 14))
+                .foregroundColor(Theme.Colors.text)
+            
+            Spacer(minLength: 0)
+        }
+        .padding()
+        .background(Theme.Colors.inputBackground)
+        .cornerRadius(16)
+    }
+}
+
+struct SuggestionRow: View {
+    let title: String
+    let suggestions: [String]
+    @Binding var selectedSuggestion: String?
+    let onSelect: (String) -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(Theme.Fonts.caption(size: 13))
+                .foregroundColor(Theme.Colors.text)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(suggestions, id: \.self) { suggestion in
+                        Button(action: {
+                            selectedSuggestion = suggestion
+                            onSelect(suggestion)
+                        }) {
+                            Text(suggestion)
+                                .font(Theme.Fonts.caption(size: 13))
+                                .foregroundColor(selectedSuggestion == suggestion ? .white : Theme.Colors.fallbackAccent)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(selectedSuggestion == suggestion ? Theme.Colors.fallbackSecondary : Theme.Colors.inputBackground)
+                                )
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+            }
         }
     }
 }

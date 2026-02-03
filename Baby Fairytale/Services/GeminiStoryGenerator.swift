@@ -1,19 +1,32 @@
 import Foundation
+import os
 
 class GeminiStoryGenerator: StoryGenerator {
     private let apiKey: String
     private let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent")!
+    private let logger = Logger(subsystem: "BabyFairytale", category: "GeminiStoryGenerator")
     
     init(apiKey: String) {
         self.apiKey = apiKey
     }
     
     func generateStory(params: StoryParams) async throws -> Story {
+        let heroLine = params.heroName.isEmpty
+        ? "Create a memorable main character suitable for the story."
+        : "The main character is named \(params.heroName)."
+        
+        let settingLine = params.setting.isEmpty
+        ? ""
+        : "The story should take place in \(params.setting)."
+        
         // Construct the prompt
         let prompt = """
         Write a children's fairytale about \(params.topic).
-        The main character is named \(params.heroName).
+        \(heroLine)
         The story should be suitable for a \(params.ageGroup.promptDescription).
+        The tone should be \(params.tone.promptDescription).
+        The length should be \(params.length.promptDescription).
+        \(settingLine)
         \(params.moral.isEmpty ? "" : "The moral of the story should be: \(params.moral).")
         
         IMPORTANT: The story MUST be written in \(params.language.rawValue).
@@ -47,7 +60,7 @@ class GeminiStoryGenerator: StoryGenerator {
         
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             if let errorText = String(data: data, encoding: .utf8) {
-                print("Gemini Error: \(errorText)")
+                logger.error("Gemini error: \(errorText)")
             }
             throw NSError(domain: "GeminiStoryGenerator", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to generate story. Check API Key."])
         }
@@ -90,12 +103,23 @@ class GeminiStoryGenerator: StoryGenerator {
         }
         
         guard let story = storyDTO else {
-            print("Failed to parse Gemini response. Content was: \(cleanedContent)")
+            logger.error("Failed to parse Gemini response. Content was: \(cleanedContent)")
             throw NSError(domain: "GeminiStoryGenerator", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to parse story from AI response"])
         }
         
         // Manually set the language
-        let newStory = Story(title: story.title, content: story.content, imagePrompt: story.imagePrompt, imageURL: nil, language: params.language == .turkish ? "tr-TR" : "en-US")
+        let newStory = Story(
+            title: story.title,
+            content: story.content,
+            imagePrompt: story.imagePrompt,
+            imageURL: nil,
+            language: params.language == .turkish ? "tr-TR" : "en-US",
+            topic: params.topic,
+            heroName: params.heroName,
+            ageGroup: params.ageGroup,
+            tone: params.tone,
+            length: params.length
+        )
         
         return newStory
     }
