@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct StoryView: View {
     let story: Story
@@ -6,6 +7,7 @@ struct StoryView: View {
     @EnvironmentObject var store: StoryStore
     @StateObject private var audioService = AudioService()
     @State private var isSaved = false
+    @State private var showCopyToast = false
     
     var body: some View {
         NavigationView {
@@ -72,6 +74,8 @@ struct StoryView: View {
                                 .foregroundColor(Theme.Colors.fallbackAccent)
                                 .multilineTextAlignment(.leading)
                             
+                            StoryMetaRow(story: story)
+                            
                             Text(story.content)
                                 .font(Theme.Fonts.body(size: 18))
                                 .foregroundColor(Theme.Colors.text)
@@ -119,6 +123,23 @@ struct StoryView: View {
                         }
                         .disabled(isSaved)
                         
+                        ShareLink(item: story.shareText) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.title2)
+                                .foregroundColor(Theme.Colors.fallbackAccent)
+                        }
+                        
+                        Button(action: {
+                            UIPasteboard.general.string = story.shareText
+                            withAnimation {
+                                showCopyToast = true
+                            }
+                        }) {
+                            Image(systemName: "doc.on.doc")
+                                .font(.title2)
+                                .foregroundColor(Theme.Colors.fallbackAccent)
+                        }
+                        
                         Button(action: { dismiss() }) {
                             Image(systemName: "xmark.circle.fill")
                                 .font(.title2)
@@ -127,7 +148,62 @@ struct StoryView: View {
                     }
                 }
             }
+            .overlay(alignment: .bottom) {
+                if showCopyToast {
+                    ToastMessage(text: "Masal kopyalandı!")
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+                                withAnimation {
+                                    showCopyToast = false
+                                }
+                            }
+                        }
+                }
+            }
         }
+    }
+}
+
+struct StoryMetaRow: View {
+    let story: Story
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            StoryMetaChip(text: story.ageGroup.rawValue, systemImage: "figure.child")
+            StoryMetaChip(text: story.tone.rawValue, systemImage: "sparkles")
+            StoryMetaChip(text: story.length.rawValue, systemImage: "text.alignleft")
+        }
+    }
+}
+
+struct StoryMetaChip: View {
+    let text: String
+    let systemImage: String
+    
+    var body: some View {
+        Label(text, systemImage: systemImage)
+            .font(Theme.Fonts.caption(size: 12))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Theme.Colors.inputBackground)
+            .cornerRadius(12)
+            .foregroundColor(Theme.Colors.fallbackAccent)
+    }
+}
+
+struct ToastMessage: View {
+    let text: String
+    
+    var body: some View {
+        Text(text)
+            .font(Theme.Fonts.caption(size: 14))
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.black.opacity(0.8))
+            .cornerRadius(14)
+            .padding(.bottom, 24)
     }
 }
 

@@ -11,11 +11,22 @@ class GeminiStoryGenerator: StoryGenerator {
     }
     
     func generateStory(params: StoryParams) async throws -> Story {
+        let heroLine = params.heroName.isEmpty
+        ? "Create a memorable main character suitable for the story."
+        : "The main character is named \(params.heroName)."
+        
+        let settingLine = params.setting.isEmpty
+        ? ""
+        : "The story should take place in \(params.setting)."
+        
         // Construct the prompt
         let prompt = """
         Write a children's fairytale about \(params.topic).
-        The main character is named \(params.heroName).
+        \(heroLine)
         The story should be suitable for a \(params.ageGroup.promptDescription).
+        The tone should be \(params.tone.promptDescription).
+        The length should be \(params.length.promptDescription).
+        \(settingLine)
         \(params.moral.isEmpty ? "" : "The moral of the story should be: \(params.moral).")
         
         IMPORTANT: The story MUST be written in \(params.language.rawValue).
@@ -97,7 +108,18 @@ class GeminiStoryGenerator: StoryGenerator {
         }
         
         // Manually set the language
-        let newStory = Story(title: story.title, content: story.content, imagePrompt: story.imagePrompt, imageURL: nil, language: params.language == .turkish ? "tr-TR" : "en-US")
+        let newStory = Story(
+            title: story.title,
+            content: story.content,
+            imagePrompt: story.imagePrompt,
+            imageURL: nil,
+            language: params.language == .turkish ? "tr-TR" : "en-US",
+            topic: params.topic,
+            heroName: params.heroName,
+            ageGroup: params.ageGroup,
+            tone: params.tone,
+            length: params.length
+        )
         
         return newStory
     }
