@@ -80,7 +80,6 @@ class StoryViewModel: ObservableObject {
                 sanitizedParams.topic = params.trimmedTopic
                 sanitizedParams.heroName = params.trimmedHeroName
                 sanitizedParams.moral = params.trimmedMoral
-                sanitizedParams.setting = params.trimmedSetting
                 
                 var story = try await generator.generateStory(params: sanitizedParams)
                 self.generatedStory = story

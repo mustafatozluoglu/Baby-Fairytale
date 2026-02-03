@@ -6,22 +6,12 @@ struct InputView: View {
     @State private var params = StoryParams()
     @State private var showLibrary = false
     @FocusState private var focusedField: Field?
-    @State private var selectedSuggestion: String?
     
     private enum Field {
         case topic
         case heroName
         case moral
-        case setting
     }
-    
-    private let suggestions = [
-        "Uçan bir balon",
-        "Renkli bir gökkuşağı",
-        "Minik bir robot",
-        "Deniz altı şehri",
-        "Sihirli orman"
-    ]
     
     var body: some View {
         NavigationView {
@@ -61,15 +51,6 @@ struct InputView: View {
                                 icon: "book.fill"
                             )
                             .focused($focusedField, equals: .topic)
-                            
-                            SuggestionRow(
-                                title: "Hızlı Öneriler",
-                                suggestions: suggestions,
-                                selectedSuggestion: $selectedSuggestion
-                            ) { suggestion in
-                                params.topic = suggestion
-                                focusedField = nil
-                            }
                             
                             InputField(
                                 title: "Kahramanın Adı",
@@ -111,38 +92,6 @@ struct InputView: View {
                                 .cornerRadius(12)
                             }
                             
-                            VStack(alignment: .leading, spacing: 8) {
-                                Label("Masal Tonu", systemImage: "sparkles")
-                                    .font(Theme.Fonts.caption(size: 14))
-                                    .foregroundColor(Theme.Colors.text)
-                                
-                                Picker("Masal Tonu", selection: $params.tone) {
-                                    ForEach(StoryTone.allCases) { tone in
-                                        Text(tone.rawValue).tag(tone)
-                                    }
-                                }
-                                .pickerStyle(.segmented)
-                                .padding(5)
-                                .background(Theme.Colors.inputBackground)
-                                .cornerRadius(12)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 8) {
-                                Label("Masal Uzunluğu", systemImage: "text.alignleft")
-                                    .font(Theme.Fonts.caption(size: 14))
-                                    .foregroundColor(Theme.Colors.text)
-                                
-                                Picker("Masal Uzunluğu", selection: $params.length) {
-                                    ForEach(StoryLength.allCases) { length in
-                                        Text(length.rawValue).tag(length)
-                                    }
-                                }
-                                .pickerStyle(.segmented)
-                                .padding(5)
-                                .background(Theme.Colors.inputBackground)
-                                .cornerRadius(12)
-                            }
-                            
                             InputField(
                                 title: "Ana Fikir (İsteğe Bağlı)",
                                 placeholder: "örn. Her zaman doğruyu söyle",
@@ -150,14 +99,6 @@ struct InputView: View {
                                 icon: "star.fill"
                             )
                             .focused($focusedField, equals: .moral)
-                            
-                            InputField(
-                                title: "Mekân (İsteğe Bağlı)",
-                                placeholder: "örn. Bulutlar şehri",
-                                text: $params.setting,
-                                icon: "map.fill"
-                            )
-                            .focused($focusedField, equals: .setting)
                         }
                         .padding(25)
                         .background(Theme.Colors.fallbackCard)
@@ -272,42 +213,5 @@ struct NoticeCard: View {
         .padding()
         .background(Theme.Colors.inputBackground)
         .cornerRadius(16)
-    }
-}
-
-struct SuggestionRow: View {
-    let title: String
-    let suggestions: [String]
-    @Binding var selectedSuggestion: String?
-    let onSelect: (String) -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(Theme.Fonts.caption(size: 13))
-                .foregroundColor(Theme.Colors.text)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(suggestions, id: \.self) { suggestion in
-                        Button(action: {
-                            selectedSuggestion = suggestion
-                            onSelect(suggestion)
-                        }) {
-                            Text(suggestion)
-                                .font(Theme.Fonts.caption(size: 13))
-                                .foregroundColor(selectedSuggestion == suggestion ? .white : Theme.Colors.fallbackAccent)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(
-                                    Capsule()
-                                        .fill(selectedSuggestion == suggestion ? Theme.Colors.fallbackSecondary : Theme.Colors.inputBackground)
-                                )
-                        }
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-        }
     }
 }

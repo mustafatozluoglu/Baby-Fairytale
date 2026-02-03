@@ -111,7 +111,25 @@ extension StoryParams {
     }
 }
 
-enum StoryLanguage: String, CaseIterable, Identifiable, Codable {
+extension StoryParams {
+    var trimmedTopic: String {
+        topic.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    var trimmedHeroName: String {
+        heroName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    var trimmedMoral: String {
+        moral.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    var isValid: Bool {
+        !trimmedTopic.isEmpty
+    }
+}
+
+enum StoryLanguage: String, CaseIterable, Identifiable {
     case turkish = "Türkçe"
     case english = "İngilizce"
     
