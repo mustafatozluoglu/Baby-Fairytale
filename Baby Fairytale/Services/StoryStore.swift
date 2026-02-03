@@ -1,9 +1,11 @@
 import Foundation
+import os
 
 class StoryStore: ObservableObject {
     @Published var savedStories: [Story] = []
     
     private let fileName = "saved_stories.json"
+    private let logger = Logger(subsystem: "BabyFairytale", category: "StoryStore")
     
     init() {
         loadStories()
@@ -30,9 +32,9 @@ class StoryStore: ObservableObject {
     private func persist() {
         do {
             let data = try JSONEncoder().encode(savedStories)
-            try data.write(to: fileURL)
+            try data.write(to: fileURL, options: .atomic)
         } catch {
-            print("Failed to save stories: \(error)")
+            logger.error("Failed to save stories: \(error.localizedDescription)")
         }
     }
     
@@ -41,7 +43,7 @@ class StoryStore: ObservableObject {
             let data = try Data(contentsOf: fileURL)
             savedStories = try JSONDecoder().decode([Story].self, from: data)
         } catch {
-            print("Failed to load stories (might be first run): \(error)")
+            logger.info("Failed to load stories (might be first run): \(error.localizedDescription)")
             savedStories = []
         }
     }

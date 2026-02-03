@@ -9,6 +9,7 @@ struct Story: Identifiable, Codable {
     let language: String
     
     enum CodingKeys: String, CodingKey {
+        case id
         case title
         case content
         case imagePrompt
@@ -23,6 +24,24 @@ struct StoryParams {
     var ageGroup: AgeGroup = .toddler
     var moral: String = ""
     var language: StoryLanguage = .turkish
+}
+
+extension StoryParams {
+    var trimmedTopic: String {
+        topic.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    var trimmedHeroName: String {
+        heroName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    var trimmedMoral: String {
+        moral.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    var isValid: Bool {
+        !trimmedTopic.isEmpty
+    }
 }
 
 enum StoryLanguage: String, CaseIterable, Identifiable {

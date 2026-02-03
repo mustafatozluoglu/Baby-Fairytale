@@ -1,8 +1,10 @@
 import Foundation
+import os
 
 class GeminiStoryGenerator: StoryGenerator {
     private let apiKey: String
     private let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent")!
+    private let logger = Logger(subsystem: "BabyFairytale", category: "GeminiStoryGenerator")
     
     init(apiKey: String) {
         self.apiKey = apiKey
@@ -47,7 +49,7 @@ class GeminiStoryGenerator: StoryGenerator {
         
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             if let errorText = String(data: data, encoding: .utf8) {
-                print("Gemini Error: \(errorText)")
+                logger.error("Gemini error: \(errorText)")
             }
             throw NSError(domain: "GeminiStoryGenerator", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to generate story. Check API Key."])
         }
@@ -90,7 +92,7 @@ class GeminiStoryGenerator: StoryGenerator {
         }
         
         guard let story = storyDTO else {
-            print("Failed to parse Gemini response. Content was: \(cleanedContent)")
+            logger.error("Failed to parse Gemini response. Content was: \(cleanedContent)")
             throw NSError(domain: "GeminiStoryGenerator", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to parse story from AI response"])
         }
         

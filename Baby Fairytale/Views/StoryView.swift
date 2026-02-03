@@ -88,6 +88,12 @@ struct StoryView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                isSaved = store.savedStories.contains(where: { $0.id == story.id })
+            }
+            .onDisappear {
+                audioService.stop()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack {
@@ -127,4 +133,5 @@ struct StoryView: View {
 
 #Preview {
     StoryView(story: Story(title: "The Magic Bunny", content: "Once upon a time...", imagePrompt: "A bunny with a magic wand", language: "en-US"))
+        .environmentObject(StoryStore())
 }

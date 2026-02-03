@@ -52,7 +52,7 @@ struct LibraryView: View {
             .navigationTitle("Kütüphanem")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button("Kapat") {
                         dismiss()
                     }
                 }
