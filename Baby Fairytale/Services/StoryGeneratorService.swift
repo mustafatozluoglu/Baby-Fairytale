@@ -1,13 +1,26 @@
 import Foundation
+import os
 
 protocol StoryGenerator {
     func generateStory(params: StoryParams) async throws -> Story
     func generateImage(prompt: String) async throws -> URL?
 }
 
+enum StoryGeneratorError: LocalizedError {
+    case missingConfiguration
+    
+    var errorDescription: String? {
+        switch self {
+        case .missingConfiguration:
+            return "GEMINI_API_KEY tanımlı değil. Lütfen Info.plist veya ortam değişkeninden anahtarınızı ekleyin."
+        }
+    }
+}
+
 class OpenAIStoryGenerator: StoryGenerator {
     private let apiKey: String
     private let endpoint = URL(string: "https://api.openai.com/v1/chat/completions")!
+    private let logger = Logger(subsystem: "BabyFairytale", category: "OpenAIStoryGenerator")
     
     init(apiKey: String) {
         self.apiKey = apiKey
@@ -49,7 +62,7 @@ class OpenAIStoryGenerator: StoryGenerator {
         
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             if let errorText = String(data: data, encoding: .utf8) {
-                print("OpenAI Error: \(errorText)")
+                logger.error("OpenAI error: \(errorText)")
             }
             throw NSError(domain: "OpenAIStoryGenerator", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to generate story. Check API Key."])
         }
@@ -98,7 +111,7 @@ class OpenAIStoryGenerator: StoryGenerator {
         
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             if let errorText = String(data: data, encoding: .utf8) {
-                print("DALL-E Error: \(errorText)")
+                logger.error("DALL-E error: \(errorText)")
             }
             throw NSError(domain: "OpenAIStoryGenerator", code: 4, userInfo: [NSLocalizedDescriptionKey: "Failed to generate image."])
         }
@@ -185,6 +198,16 @@ class MockStoryGenerator: StoryGenerator {
     func generateImage(prompt: String) async throws -> URL? {
         try await Task.sleep(nanoseconds: 1 * 1_000_000_000)
         // Return nil to show the placeholder art
-        return nil 
+        return nil
+    }
+}
+
+class MissingConfigurationStoryGenerator: StoryGenerator {
+    func generateStory(params: StoryParams) async throws -> Story {
+        throw StoryGeneratorError.missingConfiguration
+    }
+    
+    func generateImage(prompt: String) async throws -> URL? {
+        throw StoryGeneratorError.missingConfiguration
     }
 }

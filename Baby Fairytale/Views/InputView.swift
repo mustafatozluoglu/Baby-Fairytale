@@ -5,6 +5,13 @@ struct InputView: View {
     @StateObject private var store = StoryStore()
     @State private var params = StoryParams()
     @State private var showLibrary = false
+    @FocusState private var focusedField: Field?
+    
+    private enum Field {
+        case topic
+        case heroName
+        case moral
+    }
     
     var body: some View {
         NavigationView {
@@ -33,9 +40,25 @@ struct InputView: View {
                         
                         // Input Card
                         VStack(spacing: 20) {
-                            InputField(title: "Masal ne hakkında olsun?", placeholder: "örn. Cesur bir astronot", text: $params.topic, icon: "book.fill")
+                            if let message = viewModel.generatorState.message {
+                                NoticeCard(message: message, systemImage: "info.circle.fill")
+                            }
                             
-                            InputField(title: "Kahramanın Adı", placeholder: "örn. Ali", text: $params.heroName, icon: "person.fill")
+                            InputField(
+                                title: "Masal ne hakkında olsun?",
+                                placeholder: "örn. Cesur bir astronot",
+                                text: $params.topic,
+                                icon: "book.fill"
+                            )
+                            .focused($focusedField, equals: .topic)
+                            
+                            InputField(
+                                title: "Kahramanın Adı",
+                                placeholder: "örn. Ali",
+                                text: $params.heroName,
+                                icon: "person.fill"
+                            )
+                            .focused($focusedField, equals: .heroName)
                             
                             VStack(alignment: .leading, spacing: 8) {
                                 Label("Yaş Grubu", systemImage: "figure.child")
@@ -69,7 +92,13 @@ struct InputView: View {
                                 .cornerRadius(12)
                             }
                             
-                            InputField(title: "Ana Fikir (İsteğe Bağlı)", placeholder: "örn. Her zaman doğruyu söyle", text: $params.moral, icon: "star.fill")
+                            InputField(
+                                title: "Ana Fikir (İsteğe Bağlı)",
+                                placeholder: "örn. Her zaman doğruyu söyle",
+                                text: $params.moral,
+                                icon: "star.fill"
+                            )
+                            .focused($focusedField, equals: .moral)
                         }
                         .padding(25)
                         .background(Theme.Colors.fallbackCard)
@@ -80,6 +109,7 @@ struct InputView: View {
                         // Action Button
                         Button(action: {
                             viewModel.generateStory(params: params)
+                            focusedField = nil
                         }) {
                             if viewModel.isLoading {
                                 ProgressView()
@@ -89,7 +119,7 @@ struct InputView: View {
                             }
                         }
                         .buttonStyle(PrimaryButtonStyle())
-                        .disabled(params.topic.isEmpty || viewModel.isLoading)
+                        .disabled(!params.isValid || viewModel.isLoading || !viewModel.generatorState.canGenerate)
                         .padding(.horizontal, 40)
                         .padding(.bottom, 20)
                     }
@@ -128,6 +158,14 @@ struct InputView: View {
                 LibraryView()
                     .environmentObject(store)
             }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Tamam") {
+                        focusedField = nil
+                    }
+                }
+            }
         }
     }
 }
@@ -149,7 +187,31 @@ struct InputField: View {
                 .background(Theme.Colors.inputBackground)
                 .cornerRadius(12)
                 .font(Theme.Fonts.body())
+                .textInputAutocapitalization(.sentences)
+                .disableAutocorrection(false)
                 .foregroundColor(.black) // Ensure input text is visible
         }
+    }
+}
+
+struct NoticeCard: View {
+    let message: String
+    let systemImage: String
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: systemImage)
+                .foregroundColor(Theme.Colors.fallbackSecondary)
+                .font(.title3)
+            
+            Text(message)
+                .font(Theme.Fonts.caption(size: 14))
+                .foregroundColor(Theme.Colors.text)
+            
+            Spacer(minLength: 0)
+        }
+        .padding()
+        .background(Theme.Colors.inputBackground)
+        .cornerRadius(16)
     }
 }
